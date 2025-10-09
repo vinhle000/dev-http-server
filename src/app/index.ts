@@ -32,19 +32,29 @@ const handleReadiness = async function (
 
 const handleWriteMetricsToFile = async (req: Request, res: Response) => {
   const serverRequestHitCount = config.fileserverHits;
-  const data = `Hits: ${serverRequestHitCount}`;
+  // const hitCountData = serverRequestHitCount}`;
+  const hitCountData = `Hits: ${serverRequestHitCount}`;
 
-  writeFile(metricsFilePath, data, (err) => {
-    if (err) {
-      console.error('Error writing file: ', err);
-      res.sendStatus(500);
-    } else {
-      console.log(`Success writing to file at: ${metricsFilePath}`);
-      // res.sendStatus(200);
-
-      res.status(200).json(data);
-    }
+  res.set({
+    'Content-Type': 'text/html; charset=utf8',
   });
+  res.send(`<html>
+  <body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited ${serverRequestHitCount} times!</p>
+  </body>
+</html>`);
+  // writeFile(metricsFilePath, hitCountData, (err) => {
+  //   if (err) {
+  //     console.error('Error writing file: ', err);
+  //     res.sendStatus(500);
+  //   } else {
+  //     console.log(`Success writing to file at: ${metricsFilePath}`);
+  //     // res.sendStatus(200);
+
+  //     res.status(200).json(hitCountData);
+  //   }
+  // });
 };
 
 const handleResetMetrics = async (req: Request, res: Response) => {
@@ -59,5 +69,5 @@ app.listen(port, () => {
 
 /* Register hander functions to express app endpoints */
 app.get('/api/healthz', middlewareMetricInc, handleReadiness);
-app.get('/api/metrics', handleWriteMetricsToFile);
-app.get('/api/reset', handleResetMetrics);
+app.get('/admin/metrics', handleWriteMetricsToFile);
+app.get('/admin/reset', handleResetMetrics);
