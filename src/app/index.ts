@@ -16,10 +16,6 @@ const metricsFilePath = 'metrics.txt';
 app.use(middlewareLogResponses);
 app.use('/app', middlewareMetricInc, express.static('./src/app/'));
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
-
 /* Handler =================== */
 const handleReadiness = async function (
   req: Request,
@@ -55,18 +51,13 @@ const handleResetMetrics = async (req: Request, res: Response) => {
   config.fileserverHits = 0;
   console.log(`Successfully reset metrics`);
   res.sendStatus(200);
-  // if writing to file
-  // const dataToWrite = `Hits: 0`;
-  // writeFile(metricsFilePath, dataToWrite, (err) => {
-  //   if (err) {
-  //     console.error(`Error writing to file, and resetting metrics`)
-  //   } else {
-  //     console.log(`Successfully reset metrics `)
-  //   }
-  // });
 };
 
+app.listen(port, () => {
+  console.log(`\n\n------ Server is running at http://localhost:${port}`);
+});
+
 /* Register hander functions to express app endpoints */
-app.get('/healthz', middlewareMetricInc, handleReadiness);
-app.get('/metrics', handleWriteMetricsToFile);
-app.get('/reset', handleResetMetrics);
+app.get('/api/healthz', middlewareMetricInc, handleReadiness);
+app.get('/api/metrics', handleWriteMetricsToFile);
+app.get('/api/reset', handleResetMetrics);

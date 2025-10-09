@@ -29,7 +29,6 @@ export const middlewareMetricInc: Middleware = (
   next: NextFunction
 ) => {
   config.fileserverHits++;
-  console.log(`DDDD - Metrics Inc ----- hits: ${config.fileserverHits}`);
 
   next();
 };
