@@ -71,11 +71,41 @@ const handleValidateChirp = async (req: Request, res: Response) => {
   try {
     const params: parameters = req.body;
     const chirpCharacterLimit = 140;
-    if (params.body.length > chirpCharacterLimit) {
+    const chirpStr = params.body;
+
+    if (chirpStr.length > chirpCharacterLimit) {
       res.status(400).send({ error: 'Chirp is too long' });
       return;
     }
-    res.status(200).send({ valid: true });
+
+    const profaneWords = ['kerfuffle', 'sharbert', 'fornax'];
+    let words = chirpStr.split(' ');
+    let cleanedWords: string[] = [];
+
+    for (let word of words) {
+      if (profaneWords.includes(word.toLowerCase())) {
+        cleanedWords.push('****');
+      } else {
+        cleanedWords.push(word);
+      }
+    }
+    res.status(200).send({ cleanedBody: cleanedWords.join(' ') });
+
+    /* 1.
+     replace key words with ****,
+
+     1. split(' ');
+
+     2. iterate through each word,
+
+        a. if word.toLowercase is in profaneWords {}
+          // filteredWords.push('****')
+          otherwise, push word
+
+      3. join(' ');
+     */
+
+    // res.status(200).send({ valid: true });
   } catch (err) {
     res.status(500).send({ error: `Someting went wrong` });
   }
