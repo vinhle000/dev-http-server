@@ -63,6 +63,32 @@ const handleResetMetrics = async (req: Request, res: Response) => {
   res.sendStatus(200);
 };
 
+const handleValidateChirp = async (req: Request, res: Response) => {
+  let body = '';
+
+  req.on('data', (chunk) => {
+    body += chunk;
+  });
+
+  req.on('end', () => {
+    try {
+      const parsedBody = JSON.parse(body);
+
+      const chirpCharacterLimit = 140;
+      if (parsedBody.body.length > chirpCharacterLimit) {
+        res.status(400).send({ error: 'Chirp is too long' });
+        return;
+      }
+
+      res.status(200).send({ valid: true });
+    } catch (err) {
+      res.status(500).send({
+        error: 'Something went wrong',
+      });
+    }
+  });
+};
+
 app.listen(port, () => {
   console.log(`\n\n------ Server is running at http://localhost:${port}`);
 });
@@ -70,4 +96,5 @@ app.listen(port, () => {
 /* Register hander functions to express app endpoints */
 app.get('/api/healthz', middlewareMetricInc, handleReadiness);
 app.get('/admin/metrics', handleWriteMetricsToFile);
-app.get('/admin/reset', handleResetMetrics);
+app.post('/admin/reset', handleResetMetrics);
+app.post('/api/validate_chirp', handleValidateChirp);
