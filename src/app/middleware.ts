@@ -32,3 +32,32 @@ export const middlewareMetricInc: Middleware = (
 
   next();
 };
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export class MessageTooLongError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+export const errorHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.log('[DEBUG] errorHandler()  caught errdr ---> ', err); //use console.error instead??
+  if (err instanceof NotFoundError) {
+    res.status(404).send('Not Found');
+  } else if (err instanceof MessageTooLongError) {
+    res.status(400).send({ error: 'Chirp is too long. Max length is 140' });
+  } else {
+    res.status(500).json({
+      error: 'Something went wrong on our end',
+    });
+  }
+};
