@@ -5,10 +5,12 @@ import { NewUser, users } from '../schema.js';
 INSERT INTO <table> (<columns>) VALUES (<values>) RETURNINg *;
 */
 export async function createUser(user: NewUser) {
+  const { email } = user;
   const [result] = await db
     .insert(users)
-    .values(user)
+    .values({ email })
     .onConflictDoNothing()
     .returning();
+  console.log(`[DEBUG] - create user query results ====== ${result}`);
   return result;
 }

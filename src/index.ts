@@ -1,7 +1,5 @@
 import express, { Request, Response } from 'express';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+
 import {
   middlewareLogResponses,
   middlewareMetricInc,
@@ -10,12 +8,17 @@ import {
   MessageTooLongError,
   type Middleware,
 } from './app/middleware.js';
+import { createUser } from './lib/db/queries/users.js';
 import { config } from './config.js';
 const app = express();
 const port = '8080';
 const metricsFilePath = 'metrics.txt';
 
 //automated migrations client
+import postgres from 'postgres';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { drizzle } from 'drizzle-orm/postgres-js';
+
 const migrationClient = postgres(config.db.url, { max: 1 });
 await migrate(drizzle(migrationClient), config.db.migrationConfig);
 
@@ -24,7 +27,7 @@ await migrate(drizzle(migrationClient), config.db.migrationConfig);
 app.use(middlewareLogResponses);
 app.use('/app', middlewareMetricInc, express.static('./src/app/'));
 
-/* Handler =================== */
+/* Handlers =================== */
 const handleReadiness = async function (
   req: Request,
   res: Response
@@ -40,8 +43,6 @@ const handleReadiness = async function (
 
 const handleWriteMetricsToFile = async (req: Request, res: Response) => {
   const serverRequestHitCount = config.fileserverHits;
-  // // const hitCountData = serverRequestHitCount}`;
-  // const hitCountData = `Hits: ${serverRequestHitCount}`;
 
   res.set({
     'Content-Type': 'text/html; charset=utf8',
@@ -92,16 +93,35 @@ const handleValidateChirp = async (req: Request, res: Response) => {
   //   res.status(500).send({ error: `Someting went wrong` });
   // }
 };
+
+const handleAddUser = async (req: Request, res: Response) => {
+  console.log(` adding user ---`);
+
+  const { email } = req.body;
+  if (!email) {
+    throw new Error(`Request is missing 'email' field`);
+  }
+
+  const result = await createUser({ email: email });
+
+  if (!result) {
+    throw new Error(`Error occurred adding new user`);
+  } else {
+    res.status(201).send({ email: email });
+  }
+};
+/* ----------------------------- */
+
 app.listen(port, () => {
   console.log(`\n\n------ Server is running at http://localhost:${port}`);
 });
 
-/* Register hander functions to express app endpoints */
+/* Register handler functions to express app endpoints */
 app.get('/admin/metrics', handleWriteMetricsToFile);
 app.post('/admin/reset', handleResetMetrics);
 
-// Catching Errors in Async functions with errorHandler middleware
-// Option 1 - try/catch
+// // Catching Errors in Async functions with errorHandler middleware
+// // Option 1 - try/catch
 app.post('/api/validate_chirp', express.json(), async (req, res, next) => {
   try {
     await handleValidateChirp(req, res);
@@ -109,9 +129,17 @@ app.post('/api/validate_chirp', express.json(), async (req, res, next) => {
     next(err); // Pass the error to Express
   }
 });
-//Options 2 - promises
+// //Options 2 - promises
 app.get('/api/healthz', middlewareMetricInc, (req, res, next) => {
   Promise.resolve(handleReadiness(req, res).catch(next));
+});
+
+app.post('/api/users', express.json(), async (req, res, next) => {
+  try {
+    await handleAddUser(req, res);
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.use(errorHandler);
