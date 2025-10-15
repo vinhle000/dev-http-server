@@ -1,4 +1,7 @@
 import express, { Request, Response } from 'express';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 import {
   middlewareLogResponses,
   middlewareMetricInc,
@@ -8,10 +11,13 @@ import {
   type Middleware,
 } from './app/middleware.js';
 import { config } from './config.js';
-
 const app = express();
 const port = '8080';
 const metricsFilePath = 'metrics.txt';
+
+//automated migrations client
+const migrationClient = postgres(config.db.url, { max: 1 });
+await migrate(drizzle(migrationClient), config.db.migrationConfig);
 
 /* Middleware =============== */
 // app.use(middlewareMetricInc);
