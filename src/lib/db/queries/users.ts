@@ -14,3 +14,9 @@ export async function createUser(user: NewUser) {
   console.log(`[DEBUG] - create user query results ====== ${result}`);
   return result;
 }
+
+export async function deleteAllUsers() {
+  const result = await db.delete(users);
+  console.log('All users deleted from the "users" table');
+  return result;
+}

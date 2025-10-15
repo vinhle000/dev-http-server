@@ -7,6 +7,7 @@ function envOrThrow(key: string): string {
   if (!process.env[key]) {
     throw new Error(`Missing required environment variable: ${key}`);
   }
+
   return process.env[key];
 }
 const migrationConfig: MigrationConfig = {
@@ -21,6 +22,7 @@ type DBConfig = {
 type APIConfig = {
   fileserverHits: number;
   db: DBConfig;
+  platform: string;
 };
 
 export const config: APIConfig = {
@@ -29,4 +31,5 @@ export const config: APIConfig = {
     url: envOrThrow('DB_URL'),
     migrationConfig: migrationConfig,
   },
+  platform: envOrThrow('PLATFORM'),
 };

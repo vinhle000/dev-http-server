@@ -6,9 +6,10 @@ import {
   errorHandler,
   NotFoundError,
   MessageTooLongError,
+  middlewareAuthorizeByPlatform,
   type Middleware,
 } from './app/middleware.js';
-import { createUser } from './lib/db/queries/users.js';
+import { createUser, deleteAllUsers } from './lib/db/queries/users.js';
 import { config } from './config.js';
 const app = express();
 const port = '8080';
@@ -55,9 +56,14 @@ const handleWriteMetricsToFile = async (req: Request, res: Response) => {
 </html>`);
 };
 
-const handleResetMetrics = async (req: Request, res: Response) => {
+const handleReset = async (req: Request, res: Response) => {
   config.fileserverHits = 0;
   console.log(`Successfully reset metrics`);
+
+  const result = await deleteAllUsers();
+  console.log(
+    ` [D] ---- handle reset > deleteAllUsers() result ====  ${result}`
+  );
   res.sendStatus(200);
 };
 
@@ -107,7 +113,7 @@ const handleAddUser = async (req: Request, res: Response) => {
   if (!result) {
     throw new Error(`Error occurred adding new user`);
   } else {
-    res.status(201).send({ email: email });
+    res.status(201).send(result);
   }
 };
 /* ----------------------------- */
@@ -118,7 +124,7 @@ app.listen(port, () => {
 
 /* Register handler functions to express app endpoints */
 app.get('/admin/metrics', handleWriteMetricsToFile);
-app.post('/admin/reset', handleResetMetrics);
+app.post('/admin/reset', middlewareAuthorizeByPlatform, handleReset);
 
 // // Catching Errors in Async functions with errorHandler middleware
 // // Option 1 - try/catch

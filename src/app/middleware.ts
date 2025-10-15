@@ -33,6 +33,20 @@ export const middlewareMetricInc: Middleware = (
   next();
 };
 
+export const middlewareAuthorizeByPlatform: Middleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.log(
+    `[debug] authorizeByPlatform  - current platform = ${config.platform}`
+  );
+  if (config.platform !== 'dev') {
+    res.status(403).send('Forbidden');
+  } else {
+    next();
+  }
+};
 export class NotFoundError extends Error {
   constructor(message: string) {
     super(message);
