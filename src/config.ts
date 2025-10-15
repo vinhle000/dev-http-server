@@ -10,7 +10,7 @@ function envOrThrow(key: string): string {
   return process.env[key];
 }
 const migrationConfig: MigrationConfig = {
-  migrationsFolder: '../drizzle', // same as drizzle.config.ts "out" field
+  migrationsFolder: './drizzle', // same as drizzle.config.ts "out" field
 };
 
 type DBConfig = {
