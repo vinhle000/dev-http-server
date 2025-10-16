@@ -16,7 +16,7 @@ import {
   getUserById,
   deleteAllUsers,
 } from './lib/db/queries/users.js';
-import { createChirp } from './lib/db/queries/chirps.js';
+import { createChirp, getAllChirps } from './lib/db/queries/chirps.js';
 
 import { config } from './config.js';
 const app = express();
@@ -156,6 +156,18 @@ const handleCreateChirp = async (req: Request, res: Response) => {
     res.status(201).send(result);
   }
 };
+
+const handleGetAllChirps = async (req: Request, res: Response) => {
+  // maybe protect this endoint with checking admin
+
+  const result = await getAllChirps();
+
+  if (!result) {
+    throw new Error(`Error occurred getting ALL chirps`);
+  } else {
+    res.status(200).send(result);
+  }
+};
 /* ----------------------------- */
 
 app.listen(port, () => {
@@ -166,21 +178,10 @@ app.listen(port, () => {
 app.get('/admin/metrics', handleWriteMetricsToFile);
 app.post('/admin/reset', middlewareAuthorizeByPlatform, handleReset);
 
-// // Catching Errors in Async functions with errorHandler middleware
-// // Option 1 - try/catch
-// app.post('/api/validate_chirp', express.json(), async (req, res, next) => {
-//   try {
-//     await handleValidateChirp(req, res);
-//   } catch (err) {
-//     next(err); // Pass the error to Express
-//   }
-// });
 // / - promise implementation of handling async errors with error middleware
 app.get('/api/healthz', middlewareMetricInc, (req, res, next) => {
   Promise.resolve(handleReadiness(req, res).catch(next));
 });
-
-// Users
 
 // FOR TESTING - TODO fix
 app.get('/api/users/:userId', async (req, res, next) => {
@@ -214,6 +215,13 @@ app.post('/api/users', express.json(), async (req, res, next) => {
 app.post('/api/chirps', express.json(), async (req, res, next) => {
   try {
     await handleCreateChirp(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+app.get('/api/chirps', async (req, res, next) => {
+  try {
+    await handleGetAllChirps(req, res);
   } catch (err) {
     next(err);
   }
