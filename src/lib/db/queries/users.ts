@@ -1,5 +1,6 @@
 import { db } from '../index.js';
 import { NewUser, users } from '../schema.js';
+import { eq } from 'drizzle-orm';
 
 /*
 INSERT INTO <table> (<columns>) VALUES (<values>) RETURNINg *;
@@ -11,7 +12,14 @@ export async function createUser(user: NewUser) {
     .values({ email })
     .onConflictDoNothing()
     .returning();
-  console.log(`[DEBUG] - create user query results ====== ${result}`);
+  console.log(
+    `[DEBUG] - create user query results ====== ${JSON.stringify(result)}`
+  );
+  return result;
+}
+
+export async function getUserById(userId: string) {
+  const [result] = await db.select().from(users).where(eq(users.id, userId));
   return result;
 }
 
