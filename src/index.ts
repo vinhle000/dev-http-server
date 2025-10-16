@@ -16,7 +16,11 @@ import {
   getUserById,
   deleteAllUsers,
 } from './lib/db/queries/users.js';
-import { createChirp, getAllChirps } from './lib/db/queries/chirps.js';
+import {
+  createChirp,
+  getAllChirps,
+  getChirp,
+} from './lib/db/queries/chirps.js';
 
 import { config } from './config.js';
 const app = express();
@@ -75,40 +79,6 @@ const handleReset = async (req: Request, res: Response) => {
   res.sendStatus(200);
 };
 
-// TODO: remove
-// const handleValidateChirp = async (req: Request, res: Response) => {
-//   type parameters = {
-//     body: string;
-//   };
-
-//   // try {
-//   const params: parameters = req.body;
-//   const chirpCharacterLimit = 140;
-//   const chirpStr = params.body;
-
-//   if (chirpStr.length > chirpCharacterLimit) {
-//     throw new MessageTooLongError(`Chirp is too long`);
-//     // res.status(400).send({ error: 'Chirp is too long' });
-//     // return;
-//   }
-
-//   const profaneWords = ['kerfuffle', 'sharbert', 'fornax'];
-//   let words = chirpStr.split(' ');
-//   let cleanedWords: string[] = [];
-
-//   for (let word of words) {
-//     if (profaneWords.includes(word.toLowerCase())) {
-//       cleanedWords.push('****');
-//     } else {
-//       cleanedWords.push(word);
-//     }
-//   }
-//   res.status(200).send({ cleanedBody: cleanedWords.join(' ') });
-//   // } catch (err) {
-//   //   res.status(500).send({ error: `Someting went wrong` });
-//   // }
-// };
-
 const handleAddUser = async (req: Request, res: Response) => {
   const { email } = req.body;
   if (!email) {
@@ -158,8 +128,6 @@ const handleCreateChirp = async (req: Request, res: Response) => {
 };
 
 const handleGetAllChirps = async (req: Request, res: Response) => {
-  // maybe protect this endoint with checking admin
-
   const result = await getAllChirps();
 
   if (!result) {
@@ -168,18 +136,29 @@ const handleGetAllChirps = async (req: Request, res: Response) => {
     res.status(200).send(result);
   }
 };
+
+const handleGetChirp = async (req: Request, res: Response) => {
+  const { chirpID } = req.params;
+
+  const result = await getChirp(chirpID);
+  if (!result) {
+    throw new NotFoundError(`Error occurred getting chirp by Id`);
+  }
+  res.status(200).send(result);
+};
 /* ----------------------------- */
 
 app.listen(port, () => {
-  console.log(`\n\n------ Server is running at http://localhost:${port}`);
+  console.log(
+    `\n\n------ Server is running at http://localhost:${port}---------`
+  );
 });
 
-/* Register handler functions to express app endpoints */
 app.get('/admin/metrics', handleWriteMetricsToFile);
 app.post('/admin/reset', middlewareAuthorizeByPlatform, handleReset);
 
-// / - promise implementation of handling async errors with error middleware
 app.get('/api/healthz', middlewareMetricInc, (req, res, next) => {
+  // / - promise implementation of handling async errors with error middleware
   Promise.resolve(handleReadiness(req, res).catch(next));
 });
 
@@ -188,17 +167,10 @@ app.get('/api/users/:userId', async (req, res, next) => {
   const { userId } = req.params;
   try {
     const result = await getUserById(userId);
-    console.log(
-      `DD - result from getting by id ----- > ${JSON.stringify(
-        result,
-        null,
-        2
-      )}`
-    );
-    // if (!result) {
-    // TODO: fix and throw error
-    //   res.status(404).send({ error: `userId was not found` });
-    // }
+
+    if (!result) {
+      throw new NotFoundError(`User was not found`);
+    }
     res.status(200).send(result);
   } catch (err) {
     next(err);
@@ -226,5 +198,11 @@ app.get('/api/chirps', async (req, res, next) => {
     next(err);
   }
 });
-
+app.get('/api/chirps/:chirpID', async (req, res, next) => {
+  try {
+    await handleGetChirp(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 app.use(errorHandler);

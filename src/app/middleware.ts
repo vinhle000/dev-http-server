@@ -64,7 +64,8 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log('[DEBUG] errorHandler()  caught errdr ---> ', err); //use console.error instead??
+  console.log('[DEBUG] errorHandler()---> ', err); //use console.error instead??
+  console.log(`\n\n`);
   if (err instanceof NotFoundError) {
     res.status(404).send('Not Found');
   } else if (err instanceof MessageTooLongError) {
