@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { hashPassword, checkPasswordHash, makeJWT, validateJWT } from './auth';
+import {
+  hashPassword,
+  checkPasswordHash,
+  makeJWT,
+  validateJWT,
+  getBearerToken,
+} from './auth';
+import { Request } from 'express';
 import { hash } from 'crypto';
 /* tests needed
 [ ] create can validate JWT
@@ -55,5 +62,52 @@ describe('JWT Token creation and validation', async () => {
 
   it('should reject token with wrong secret', async () => {
     expect(() => validateJWT(token, 'wrong secret')).toThrow('Invalid token');
+  });
+});
+
+describe('Bearer Token Extraction', () => {
+  it('should extract valid bearer token from authorization header', () => {
+    const mockRequest = {
+      headers: {
+        authorization: 'Bearer abc123def456',
+      },
+    } as Request;
+
+    const result = getBearerToken(mockRequest);
+    expect(result).toBe('abc123def456');
+  });
+
+  it('should throw UnauthorizedError when authorization header is missing', () => {
+    const mockRequest = {
+      headers: {},
+    } as Request;
+
+    expect(() => getBearerToken(mockRequest)).toThrow(
+      'Authorization header missing'
+    );
+  });
+
+  it('should throw error for unsupported authorization scheme (Basic auth)', () => {
+    const mockRequest = {
+      headers: {
+        authorization: 'Basic dXNlcjpwYXNz',
+      },
+    } as Request;
+
+    expect(() => getBearerToken(mockRequest)).toThrow(
+      'Unsupported authorization scheme'
+    );
+  });
+
+  it('should throw error for malformed bearer token (no space)', () => {
+    const mockRequest = {
+      headers: {
+        authorization: 'Bearertoken123',
+      },
+    } as Request;
+
+    expect(() => getBearerToken(mockRequest)).toThrow(
+      'Unsupported authorization scheme'
+    );
   });
 });
