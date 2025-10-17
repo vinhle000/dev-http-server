@@ -27,6 +27,17 @@ const app = express();
 const port = '8080';
 const metricsFilePath = 'metrics.txt';
 
+import {
+  handleReadiness,
+  handleWriteMetricsToFile,
+  handleReset,
+  handleAddUser,
+  handleGetUser,
+  handleCreateChirp,
+  handleGetAllChirps,
+  handleGetChirp,
+} from './app/handlers.js';
+
 //automated migrations client
 import postgres from 'postgres';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
@@ -36,117 +47,8 @@ const migrationClient = postgres(config.db.url, { max: 1 });
 await migrate(drizzle(migrationClient), config.db.migrationConfig);
 
 /* Middleware =============== */
-// app.use(middlewareMetricInc);
 app.use(middlewareLogResponses);
 app.use('/app', middlewareMetricInc, express.static('./src/app/'));
-
-/* Handlers =================== */
-const handleReadiness = async function (
-  req: Request,
-  res: Response
-): Promise<void> {
-  console.log(` handler readiness `);
-  res.set({
-    'Content-Type': 'text/plain; charset=utf-8',
-  });
-
-  const body = 'OK';
-  res.send(body);
-};
-
-const handleWriteMetricsToFile = async (req: Request, res: Response) => {
-  const serverRequestHitCount = config.fileserverHits;
-
-  res.set({
-    'Content-Type': 'text/html; charset=utf8',
-  });
-  res.send(`<html>
-  <body>
-    <h1>Welcome, Chirpy Admin</h1>
-    <p>Chirpy has been visited ${serverRequestHitCount} times!</p>
-  </body>
-</html>`);
-};
-
-const handleReset = async (req: Request, res: Response) => {
-  config.fileserverHits = 0;
-  console.log(`Successfully reset metrics`);
-
-  const result = await deleteAllUsers();
-  console.log(
-    ` [D] ---- handle reset > deleteAllUsers() result ====  ${result}`
-  );
-  res.sendStatus(200);
-};
-
-const handleAddUser = async (req: Request, res: Response) => {
-  const { email } = req.body;
-  if (!email) {
-    throw new Error(`Request is missing 'email' field`);
-  }
-
-  const result = await createUser({ email: email });
-  console.log(`DDDDDD - result of creatUser() ===> ${JSON.stringify(result)}`);
-  if (!result) {
-    throw new Error(`Error occurred adding new user`);
-  } else {
-    res.status(201).send(result);
-  }
-};
-
-const handleCreateChirp = async (req: Request, res: Response) => {
-  const { body, userId } = req.body;
-
-  // TODO - maybe validate user exists in db
-
-  const chirpCharacterLimit = 140;
-  const chirpStr = body;
-
-  if (chirpStr.length > chirpCharacterLimit) {
-    throw new MessageTooLongError(`Chirp is too long`);
-  }
-
-  const profaneWords = ['kerfuffle', 'sharbert', 'fornax'];
-  let words = chirpStr.split(' ');
-  let cleanedWords: string[] = [];
-
-  for (let word of words) {
-    if (profaneWords.includes(word.toLowerCase())) {
-      cleanedWords.push('****');
-    } else {
-      cleanedWords.push(word);
-    }
-  }
-
-  const result = await createChirp(cleanedWords.join(' '), userId);
-
-  if (!result) {
-    throw new Error(`Error occurred creating new chirp`);
-  } else {
-    res.status(201).send(result);
-  }
-};
-
-const handleGetAllChirps = async (req: Request, res: Response) => {
-  const result = await getAllChirps();
-
-  if (!result) {
-    throw new Error(`Error occurred getting ALL chirps`);
-  } else {
-    res.status(200).send(result);
-  }
-};
-
-const handleGetChirp = async (req: Request, res: Response) => {
-  const { chirpID } = req.params;
-
-  const result = await getChirp(chirpID);
-  if (!result) {
-    throw new NotFoundError(`Error occurred getting chirp by Id`);
-  }
-  res.status(200).send(result);
-};
-/* ----------------------------- */
 
 app.listen(port, () => {
   console.log(
