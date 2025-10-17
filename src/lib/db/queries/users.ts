@@ -6,15 +6,20 @@ import { eq } from 'drizzle-orm';
 INSERT INTO <table> (<columns>) VALUES (<values>) RETURNINg *;
 */
 export async function createUser(user: NewUser) {
-  const { email } = user;
+  const { email, hashedPassword } = user;
   const [result] = await db
     .insert(users)
-    .values({ email })
+    .values({ email, hashedPassword })
     .onConflictDoNothing()
     .returning();
   console.log(
     `[DEBUG] - create user query results ====== ${JSON.stringify(result)}`
   );
+  return result;
+}
+
+export async function getUserByEmail(email: string) {
+  const [result] = await db.select().from(users).where(eq(users.email, email));
   return result;
 }
 

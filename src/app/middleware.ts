@@ -58,6 +58,12 @@ export class MessageTooLongError extends Error {
     super(message);
   }
 }
+
+export class UnauthorizedError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 export const errorHandler = (
   err: Error,
   req: Request,
@@ -70,6 +76,8 @@ export const errorHandler = (
     res.status(404).send('Not Found');
   } else if (err instanceof MessageTooLongError) {
     res.status(400).send({ error: 'Chirp is too long. Max length is 140' });
+  } else if (err instanceof UnauthorizedError) {
+    res.status(401).send({ error: `Unauthorized` });
   } else {
     res.status(500).json({
       error: 'Something went wrong on our end',

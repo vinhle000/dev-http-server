@@ -31,8 +31,8 @@ import {
   handleReadiness,
   handleWriteMetricsToFile,
   handleReset,
-  handleAddUser,
-  handleGetUser,
+  handleCreateUser,
+  handleLogin,
   handleCreateChirp,
   handleGetAllChirps,
   handleGetChirp,
@@ -78,9 +78,18 @@ app.get('/api/users/:userId', async (req, res, next) => {
     next(err);
   }
 });
+
 app.post('/api/users', express.json(), async (req, res, next) => {
   try {
-    await handleAddUser(req, res);
+    await handleCreateUser(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.post('/api/login', express.json(), async (req, res, next) => {
+  try {
+    await handleLogin(req, res);
   } catch (err) {
     next(err);
   }

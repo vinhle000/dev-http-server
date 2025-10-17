@@ -4,11 +4,13 @@ import {
   NotFoundError,
   MessageTooLongError,
   type Middleware,
+  UnauthorizedError,
 } from './middleware.js';
-
+import { hashPassword, checkPasswordHash } from '../lib/auth.js';
 // Model DB functions
 import {
   createUser,
+  getUserByEmail,
   getUserById,
   deleteAllUsers,
 } from '../lib/db/queries/users.js';
@@ -19,6 +21,9 @@ import {
 } from '../lib/db/queries/chirps.js';
 
 import { config } from '../config.js';
+
+import { NewUser } from '../lib/db/schema.js';
+type UserResponse = Omit<NewUser, 'hashPassword'>;
 
 export const handleReadiness = async function (
   req: Request,
@@ -58,18 +63,32 @@ export const handleReset = async (req: Request, res: Response) => {
   res.sendStatus(200);
 };
 
-export const handleAddUser = async (req: Request, res: Response) => {
-  const { email } = req.body;
-  if (!email) {
-    throw new Error(`Request is missing 'email' field`);
+export const handleCreateUser = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new Error(`Request is missing 'email' or 'password`);
   }
 
-  const result = await createUser({ email: email });
-  console.log(`DDDDDD - result of creatUser() ===> ${JSON.stringify(result)}`);
+  const hashedPassword = await hashPassword(password);
+
+  const result = await createUser({
+    email: email,
+    hashedPassword: hashedPassword,
+  });
+
+  console.log(`DDDDDD - result of createUser() ===> ${JSON.stringify(result)}`);
+
   if (!result) {
-    throw new Error(`Error occurred adding new user`);
+    throw new Error(`Error occurred creating new user`);
   } else {
-    res.status(201).send(result);
+    const newUserResponse: UserResponse = {
+      id: result.id,
+      createdAt: result.createdAt,
+      updatedAt: result.updatedAt,
+      email: result.email,
+    };
+    res.status(201).send(newUserResponse);
   }
 };
 
@@ -83,10 +102,25 @@ export const handleGetUser = async (req: Request, res: Response) => {
   return result;
 };
 
+export const handleLogin = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  const user = await getUserByEmail(email);
+  if (!user || !(await checkPasswordHash(user.hashedPassword, password))) {
+    throw new UnauthorizedError(`Incorrect email or password`);
+  }
+  const userResponse: UserResponse = {
+    id: user.id,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    email: user.email,
+  };
+  res.status(200).send(userResponse);
+};
 export const handleCreateChirp = async (req: Request, res: Response) => {
   const { body, userId } = req.body;
 
-  // TODO - maybe validate user exists in db
+  // NOTE - maybe validate user exists in db
 
   const chirpCharacterLimit = 140;
   const chirpStr = body;

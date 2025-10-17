@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "dependencies": {
+    "argon2": "^0.44.0",
     "drizzle-orm": "^0.44.6",
     "esbuild": "^0.25.10",
     "expres": "^0.0.5",
