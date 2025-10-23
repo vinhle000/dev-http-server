@@ -11,6 +11,7 @@ import {
   validateJWT,
   hashPassword,
   checkPasswordHash,
+  getBearerToken,
 } from '../lib/auth.js';
 // Model DB functions
 import {
@@ -135,12 +136,27 @@ export const handleLogin = async (req: Request, res: Response) => {
     email: user.email,
   };
   // 3. attach created token to userResponse
-  res.status(200).send({ ...userResponse, jwtToken }); // add generated jwt token
+  res.status(200).send({ ...userResponse, token: jwtToken }); // add generated jwt token
 };
+
+/* Update the POST /api/chirps endpoint. It is now an authenticated endpoint===============
+ To post a chirp, a user needs to have a valid JWT.
+[ ] The JWT will determine which user is posting the chirp.
+[ ] Use your getBearerToken and validateJWT functions.
+[ ]  If the JWT is invalid, throw an appropriate error.
+*/
 export const handleCreateChirp = async (req: Request, res: Response) => {
-  const { body, userId } = req.body;
+  const { body } = req.body;
 
   // NOTE - maybe validate user exists in db
+  const userJwt = await getBearerToken(req);
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
+  }
+  const validatedUserId = validateJWT(userJwt, jwtSecret);
+
+  console.log(`DEBUG=======\nvalidatedUserId = ${validatedUserId}`);
 
   const chirpCharacterLimit = 140;
   const chirpStr = body;
@@ -161,7 +177,7 @@ export const handleCreateChirp = async (req: Request, res: Response) => {
     }
   }
 
-  const result = await createChirp(cleanedWords.join(' '), userId);
+  const result = await createChirp(cleanedWords.join(' '), validatedUserId);
 
   if (!result) {
     throw new Error(`Error occurred creating new chirp`);
