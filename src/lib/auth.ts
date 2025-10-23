@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import { Request } from 'express';
-import { UnauthorizedError } from 'src/app/middleware';
+import { UnauthorizedError } from '../app/middleware.js';
 process.loadEnvFile();
 
 type payload = Pick<jwt.JwtPayload, 'iss' | 'sub' | 'iat' | 'exp'>;
@@ -11,12 +11,14 @@ export function makeJWT(
   expiresIn: number,
   secret: string
 ): string {
+  //post REQ has seconds, sign() expects the default unit to be ms
+  let expiresInMilliSeconds = expiresIn * 1000; // seconds -> ms
   const issuedAt = Math.floor(Date.now() / 1000);
   const payload: payload = {
     iss: 'chirpy',
     sub: userId,
     iat: issuedAt,
-    exp: issuedAt + expiresIn,
+    exp: issuedAt + expiresInMilliSeconds,
   };
 
   const token = jwt.sign(payload, secret);

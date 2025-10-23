@@ -6,7 +6,12 @@ import {
   type Middleware,
   UnauthorizedError,
 } from './middleware.js';
-import { hashPassword, checkPasswordHash } from '../lib/auth.js';
+import {
+  makeJWT,
+  validateJWT,
+  hashPassword,
+  checkPasswordHash,
+} from '../lib/auth.js';
 // Model DB functions
 import {
   createUser,
@@ -25,6 +30,7 @@ import { config } from '../config.js';
 import { NewUser } from '../lib/db/schema.js';
 type UserResponse = Omit<NewUser, 'hashPassword'>;
 
+process.loadEnvFile();
 export const handleReadiness = async function (
   req: Request,
   res: Response
@@ -103,19 +109,33 @@ export const handleGetUser = async (req: Request, res: Response) => {
 };
 
 export const handleLogin = async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, expiresInSeconds } = req.body;
 
   const user = await getUserByEmail(email);
+  console.log(`\n\n--------\n${password}`);
   if (!user || !(await checkPasswordHash(user.hashedPassword, password))) {
     throw new UnauthorizedError(`Incorrect email or password`);
   }
+  let expTime: number = expiresInSeconds;
+
+  if (!expTime || expTime > 3600) {
+    expTime = 3600; //seconds in an hour, defaults to 1 hour
+  }
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
+  }
+  const jwtToken = makeJWT(user.id, expTime, jwtSecret);
+
   const userResponse: UserResponse = {
     id: user.id,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     email: user.email,
   };
-  res.status(200).send(userResponse);
+  // 3. attach created token to userResponse
+  res.status(200).send({ ...userResponse, jwtToken }); // add generated jwt token
 };
 export const handleCreateChirp = async (req: Request, res: Response) => {
   const { body, userId } = req.body;
