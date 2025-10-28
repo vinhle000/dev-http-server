@@ -12,6 +12,7 @@ import {
   hashPassword,
   checkPasswordHash,
   getBearerToken,
+  makeRefreshToken,
 } from '../lib/auth.js';
 // Model DB functions
 import {
@@ -28,7 +29,7 @@ import {
 
 import { config } from '../config.js';
 
-import { NewUser } from '../lib/db/schema.js';
+import { NewUser, RefreshToken } from '../lib/db/schema.js';
 type UserResponse = Omit<NewUser, 'hashPassword'>;
 
 process.loadEnvFile();
@@ -108,26 +109,33 @@ export const handleGetUser = async (req: Request, res: Response) => {
   }
   return result;
 };
-
+/*
+// [ ]3 Update the POST /api/login endpoint to return a refresh token, as well as an access token:------------9
+ // [ ] Access tokens (JWTs) should expire after 1 hour. Expiration time is stored in the exp claim. You can remove the optional expires_in_seconds parameter from the endpoint.
+ // [ ] Refresh tokens should expire after 60 days. Expiration time is stored in the database.
+ // [ ] The revoked_at field should be null when the token is created.
+*/
 export const handleLogin = async (req: Request, res: Response) => {
-  const { email, password, expiresInSeconds } = req.body;
+  const { email, password } = req.body;
 
   const user = await getUserByEmail(email);
   console.log(`\n\n--------\n${password}`);
   if (!user || !(await checkPasswordHash(user.hashedPassword, password))) {
     throw new UnauthorizedError(`Incorrect email or password`);
   }
-  let expTime: number = expiresInSeconds;
+  let expTime: number = 3600;
 
-  if (!expTime || expTime > 3600) {
-    expTime = 3600; //seconds in an hour, defaults to 1 hour
-  }
+  // jwt token always set to expire after 1 hour
+  // if (!expTime || expTime > 3600) {
+  //   expTime = 3600; //seconds in an hour, defaults to 1 hour
+  // }
 
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
     throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
   }
   const jwtToken = makeJWT(user.id, expTime, jwtSecret);
+  const refreshToken: RefreshToken = await makeRefreshToken(user.id); // should return refresh token obj
 
   const userResponse: UserResponse = {
     id: user.id,
@@ -135,8 +143,10 @@ export const handleLogin = async (req: Request, res: Response) => {
     updatedAt: user.updatedAt,
     email: user.email,
   };
-  // 3. attach created token to userResponse
-  res.status(200).send({ ...userResponse, token: jwtToken }); // add generated jwt token
+  // attach created jwt and refreshToken to userResponse
+  res
+    .status(200)
+    .send({ ...userResponse, token: jwtToken, refreshToken: refreshToken.id }); // add generated jwt token
 };
 
 /* Update the POST /api/chirps endpoint. It is now an authenticated endpoint===============

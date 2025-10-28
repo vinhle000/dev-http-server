@@ -2,7 +2,11 @@ import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import { Request } from 'express';
 import { UnauthorizedError } from '../app/middleware.js';
+import { createRefreshToken } from './db/queries/refreshTokens.js';
+import { RefreshToken } from './db/schema.js';
 process.loadEnvFile();
+
+const { randomBytes } = await import('node:crypto');
 
 type payload = Pick<jwt.JwtPayload, 'iss' | 'sub' | 'iat' | 'exp'>;
 
@@ -14,6 +18,7 @@ export function makeJWT(
   //post REQ has seconds, sign() expects the default unit to be ms
   let expiresInMilliSeconds = expiresIn * 1000; // seconds -> ms
   const issuedAt = Math.floor(Date.now() / 1000);
+
   const payload: payload = {
     iss: 'chirpy',
     sub: userId,
@@ -63,4 +68,20 @@ export async function checkPasswordHash(
 ): Promise<boolean> {
   return await argon2.verify(hash, password);
   ``;
+}
+
+/*
+// [ ] 2. add a makeRefreshToken function to your auth.ts file.
+// [ ] It should use the following to generate a random 256-bit (32-byte) hex-encoded string:
+    - crypto.randomBytes() to generate 32 bytes (256 bits) of random data from the built-in crypto module.
+   - .toString() to convert the random data to a hex string. Just pass in 'hex' as the argument.
+
+*/
+export async function makeRefreshToken(userId: string): Promise<RefreshToken> {
+  const buf = randomBytes(256);
+  const tokenHexString = buf.toString('hex');
+
+  const result = await createRefreshToken(tokenHexString, userId);
+
+  return result;
 }
