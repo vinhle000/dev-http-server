@@ -35,3 +35,13 @@ export async function getUserFromRefreshToken(refreshTokenHexString: string) {
 
   return result.user;
 }
+
+export async function revokeRefreshToken(refreshTokenHexString: string) {
+  const [result] = await db
+    .update(refreshTokens)
+    .set({ revokedAt: new Date() })
+    .where(eq(refreshTokens.id, refreshTokenHexString))
+    .returning();
+
+  return result;
+}

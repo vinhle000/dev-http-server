@@ -34,11 +34,11 @@ export function validateJWT(tokenString: string, secret: string): string {
   try {
     const decodedToken = jwt.verify(tokenString, secret);
     if (!(typeof decodedToken?.sub === 'string')) {
-      throw new Error('Invalid token');
+      throw new UnauthorizedError('Invalid token');
     }
     return decodedToken.sub; //returning userId
   } catch (err) {
-    throw new Error('Invalid token');
+    throw new UnauthorizedError('Invalid token');
   }
 }
 

@@ -29,6 +29,7 @@ import {
 import {
   getRefreshToken,
   getUserFromRefreshToken,
+  revokeRefreshToken,
 } from '../lib/db/queries/refreshTokens.js';
 import { config } from '../config.js';
 
@@ -191,6 +192,27 @@ export const handleRefresh = async (req: Request, res: Response) => {
 
   res.status(200).send({ token: jwtToken });
 };
+// [ ] 5. require a refresh token to be present in the headers, in the same Authorization: Bearer <token> format.
+export const handleRevoke = async (req: Request, res: Response) => {
+  const refreshTokenHexString = getBearerToken(req);
+  const revokedToken: RefreshToken = await revokeRefreshToken(
+    refreshTokenHexString
+  );
+  if (!revokedToken) {
+    throw new UnauthorizedError('invalid refresh token');
+  }
+  console.log(
+    `\nDEBUG --------\n ${JSON.stringify(
+      revokedToken,
+      null,
+      2
+    )} \n\n-=================`
+  );
+
+  res.sendStatus(204);
+  // db query to revoke the record
+};
+
 /* Update the POST /api/chirps endpoint. It is now an authenticated endpoint===============
  To post a chirp, a user needs to have a valid JWT.
 [ ] The JWT will determine which user is posting the chirp.

@@ -37,6 +37,7 @@ import {
   handleGetAllChirps,
   handleGetChirp,
   handleRefresh,
+  handleRevoke,
 } from './app/handlers.js';
 
 //automated migrations client
@@ -99,6 +100,14 @@ app.post('/api/login', express.json(), async (req, res, next) => {
 app.post('/api/refresh', express.json(), async (req, res, next) => {
   try {
     await handleRefresh(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+app.post('/api/revoke', express.json(), async (req, res, next) => {
+  try {
+    // await hanlder function
+    await handleRevoke(req, res);
   } catch (err) {
     next(err);
   }
