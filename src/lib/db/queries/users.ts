@@ -12,9 +12,7 @@ export async function createUser(user: NewUser) {
     .values({ email, hashedPassword })
     .onConflictDoNothing()
     .returning();
-  console.log(
-    `[DEBUG] - create user query results ====== ${JSON.stringify(result)}`
-  );
+
   return result;
 }
 
