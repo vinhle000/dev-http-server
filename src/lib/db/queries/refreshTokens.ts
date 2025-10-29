@@ -1,5 +1,6 @@
 import { db } from '../index.js';
-import { refreshTokens, type RefreshToken } from '../schema.js';
+import { users, refreshTokens, type NewUser, RefreshToken } from '../schema.js';
+import { eq } from 'drizzle-orm';
 
 export async function createRefreshToken(
   hexString: string,
@@ -13,4 +14,24 @@ export async function createRefreshToken(
     .values({ id: hexString, userId: userId, expiresAt: newDate })
     .returning();
   return result;
+}
+
+export async function getRefreshToken(refreshTokenHexString: string) {
+  const [result] = await db
+    .select()
+    .from(refreshTokens)
+    .where(eq(refreshTokens.id, refreshTokenHexString));
+
+  return result;
+}
+
+export async function getUserFromRefreshToken(refreshTokenHexString: string) {
+  const [result] = await db
+    .select({ user: users })
+    .from(refreshTokens)
+    .innerJoin(users, eq(refreshTokens.userId, users.id))
+    .where(eq(refreshTokens.id, refreshTokenHexString));
+  // .limit(1);
+
+  return result.user;
 }

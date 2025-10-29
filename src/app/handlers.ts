@@ -26,7 +26,10 @@ import {
   getAllChirps,
   getChirp,
 } from '../lib/db/queries/chirps.js';
-
+import {
+  getRefreshToken,
+  getUserFromRefreshToken,
+} from '../lib/db/queries/refreshTokens.js';
 import { config } from '../config.js';
 
 import { NewUser, RefreshToken } from '../lib/db/schema.js';
@@ -149,6 +152,45 @@ export const handleLogin = async (req: Request, res: Response) => {
     .send({ ...userResponse, token: jwtToken, refreshToken: refreshToken.id }); // add generated jwt token
 };
 
+/* ===================
+[x] 4. Create a POST /api/refresh endpoint. ============
+[x] This new endpoint does not accept a request body, but does require
+[x] a refresh token to be present in the headers, in the same Authorization: Bearer <token> format.
+*/
+export const handleRefresh = async (req: Request, res: Response) => {
+  const refreshTokenHexString = await getBearerToken(req);
+
+  const refreshToken: RefreshToken = await getRefreshToken(
+    refreshTokenHexString
+  );
+
+  console.log(
+    `\n\n DEBUG ------> refreshToken obj = ${JSON.stringify(
+      refreshToken,
+      null,
+      2
+    )}\n\n --------\n\n`
+  );
+  if (
+    !refreshToken ||
+    refreshToken.revokedAt !== null ||
+    refreshToken.expiresAt.getTime() <= Date.now()
+  ) {
+    throw new UnauthorizedError(`Invalid refresh token`);
+  }
+
+  const user = await getUserFromRefreshToken(refreshToken.id);
+
+  let expTime: number = 3600; //NOTE: can remove and make the makeJWT default to 1 hour exp time
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
+  }
+  const jwtToken = await makeJWT(user.id, expTime, jwtSecret);
+
+  res.status(200).send({ token: jwtToken });
+};
 /* Update the POST /api/chirps endpoint. It is now an authenticated endpoint===============
  To post a chirp, a user needs to have a valid JWT.
 [ ] The JWT will determine which user is posting the chirp.

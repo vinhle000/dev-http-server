@@ -36,6 +36,7 @@ import {
   handleCreateChirp,
   handleGetAllChirps,
   handleGetChirp,
+  handleRefresh,
 } from './app/handlers.js';
 
 //automated migrations client
@@ -95,6 +96,13 @@ app.post('/api/login', express.json(), async (req, res, next) => {
   }
 });
 
+app.post('/api/refresh', express.json(), async (req, res, next) => {
+  try {
+    await handleRefresh(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
 app.post('/api/chirps', express.json(), async (req, res, next) => {
   try {
     await handleCreateChirp(req, res);
