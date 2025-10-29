@@ -37,6 +37,7 @@ import { NewUser, RefreshToken } from '../lib/db/schema.js';
 type UserResponse = Omit<NewUser, 'hashPassword'>;
 
 process.loadEnvFile();
+
 export const handleReadiness = async function (
   req: Request,
   res: Response
@@ -129,11 +130,7 @@ export const handleLogin = async (req: Request, res: Response) => {
   //   expTime = 3600; //seconds in an hour, defaults to 1 hour
   // }
 
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
-  }
-  const jwtToken = makeJWT(user.id, expTime, jwtSecret);
+  const jwtToken = makeJWT(user.id, expTime, config.jwtSecret);
   const refreshToken: RefreshToken = await makeRefreshToken(user.id); // should return refresh token obj
 
   const userResponse: UserResponse = {
@@ -166,12 +163,7 @@ export const handleRefresh = async (req: Request, res: Response) => {
   const user = await getUserFromRefreshToken(refreshToken.id);
 
   let expTime: number = 3600; //NOTE: can remove and make the makeJWT default to 1 hour exp time
-  const jwtSecret = process.env.JWT_SECRET;
-
-  if (!jwtSecret) {
-    throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
-  }
-  const jwtToken = await makeJWT(user.id, expTime, jwtSecret);
+  const jwtToken = await makeJWT(user.id, expTime, config.jwtSecret);
 
   res.status(200).send({ token: jwtToken });
 };
@@ -193,11 +185,7 @@ export const handleCreateChirp = async (req: Request, res: Response) => {
 
   // NOTE - maybe validate user exists in db
   const userJwt = await getBearerToken(req);
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error(`Server misconfiguration: JWT_SECRET is not set`);
-  }
-  const validatedUserId = validateJWT(userJwt, jwtSecret);
+  const validatedUserId = validateJWT(userJwt, config.jwtSecret);
 
   const chirpCharacterLimit = 140;
   const chirpStr = body;
@@ -245,4 +233,31 @@ export const handleGetChirp = async (req: Request, res: Response) => {
     throw new NotFoundError(`Error occurred getting chirp by Id`);
   }
   res.status(200).send(result);
+};
+
+/*
+1. [ ] Add a PUT /api/users endpoint so that users can update their own (but not others') email and password.
+  It requires: An access token in the header
+ A new password and email in the request body
+
+
+ 2. [ ] Hash the password, then update the hashed password and the email for the authenticated user in the database.
+  Respond with a 200 if everything is successful and the newly updated User resource (omitting the password, of course).
+
+3. [ ] if the access token is malformed or missing, respond with a 401 status code.
+*/
+
+export const handleUpdateUser = async (req: Request, res: Response) => {
+  // check for bearer token, must be jwt
+  const token = getBearerToken(req);
+  const userId = validateJWT(token, config.jwtSecret);
+
+  // get userId from jwt token
+
+  // get password from req,
+  // hash password
+
+  // create db query funciton to update user record with hashed password
+
+  //respond with  (newly updated User resource (omitting the password, of course).
 };
