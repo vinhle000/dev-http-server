@@ -38,6 +38,7 @@ import {
   handleGetChirp,
   handleRefresh,
   handleRevoke,
+  handleUpdateUser,
 } from './app/handlers.js';
 
 //automated migrations client
@@ -89,6 +90,14 @@ app.post('/api/users', express.json(), async (req, res, next) => {
   }
 });
 
+app.put('/api/users', express.json(), async (req, res, next) => {
+  try {
+    await handleUpdateUser(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.post('/api/login', express.json(), async (req, res, next) => {
   try {
     await handleLogin(req, res);
@@ -133,4 +142,5 @@ app.get('/api/chirps/:chirpID', async (req, res, next) => {
     next(err);
   }
 });
+
 app.use(errorHandler);

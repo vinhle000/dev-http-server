@@ -20,6 +20,7 @@ import {
   getUserByEmail,
   getUserById,
   deleteAllUsers,
+  updateUser,
 } from '../lib/db/queries/users.js';
 import {
   createChirp,
@@ -235,29 +236,31 @@ export const handleGetChirp = async (req: Request, res: Response) => {
   res.status(200).send(result);
 };
 
-/*
-1. [ ] Add a PUT /api/users endpoint so that users can update their own (but not others') email and password.
-  It requires: An access token in the header
- A new password and email in the request body
-
-
- 2. [ ] Hash the password, then update the hashed password and the email for the authenticated user in the database.
-  Respond with a 200 if everything is successful and the newly updated User resource (omitting the password, of course).
-
-3. [ ] if the access token is malformed or missing, respond with a 401 status code.
-*/
-
 export const handleUpdateUser = async (req: Request, res: Response) => {
   // check for bearer token, must be jwt
   const token = getBearerToken(req);
   const userId = validateJWT(token, config.jwtSecret);
 
-  // get userId from jwt token
+  const { email, password } = req.body;
 
-  // get password from req,
-  // hash password
+  if (!email || !password) {
+    throw new Error(`Email or password is missing`);
+  }
 
-  // create db query funciton to update user record with hashed password
+  const hashedPassword = await hashPassword(password);
+
+  const result = await updateUser(userId, email, hashedPassword);
+  if (!result) {
+    throw new Error(`Error occurred updating user`);
+  }
+  const newUserResponse: UserResponse = {
+    id: result.id,
+    createdAt: result.createdAt,
+    updatedAt: result.updatedAt,
+    email: result.email,
+  };
+
+  res.status(200).send(newUserResponse);
 
   //respond with  (newly updated User resource (omitting the password, of course).
 };
