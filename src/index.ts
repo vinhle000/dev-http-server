@@ -38,8 +38,9 @@ import {
   handleGetChirp,
   handleRefresh,
   handleRevoke,
-  handleUpdateUser,
+  handleUpdateUserCredentials,
   handleDeleteChirp,
+  webhookUpdateUserChirpRedStatus,
 } from './app/handlers.js';
 
 //automated migrations client
@@ -93,7 +94,7 @@ app.post('/api/users', express.json(), async (req, res, next) => {
 
 app.put('/api/users', express.json(), async (req, res, next) => {
   try {
-    await handleUpdateUser(req, res);
+    await handleUpdateUserCredentials(req, res);
   } catch (err) {
     next(err);
   }
@@ -147,6 +148,24 @@ app.get('/api/chirps/:chirpID', async (req, res, next) => {
 app.delete('/api/chirps/:chirpID', async (req, res, next) => {
   try {
     await handleDeleteChirp(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/* TODO
+hirpy uses "Polka" as its payment provider.
+They send us webhooks whenever a user subscribes to Chirpy Red. We need to mark users as Chirpy Red members when we receive these webhooks.
+
+[x] 1. Add a new column to the users table called is_chirpy_red.
+    This column should be a boolean, and it should default to false.
+[x] 2. Add a database query that upgrades a user to chirpy red based on their ID.
+[x] 3. Add a POST /api/polka/webhooks endpoint. It should accept a request of this shape:
+[ ] 4. Update all endpoints that return user resources to include the is_chirpy_red field.
+*/
+app.post('/api/polka/webhooks', express.json(), async (req, res, next) => {
+  try {
+    await webhookUpdateUserChirpRedStatus(req, res);
   } catch (err) {
     next(err);
   }

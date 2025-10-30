@@ -32,7 +32,7 @@ export async function deleteAllUsers() {
   return result;
 }
 
-export async function updateUser(
+export async function updateUserCredentials(
   userId: string,
   email: string,
   hashedPassword: string
@@ -43,5 +43,14 @@ export async function updateUser(
     .where(eq(users.id, userId))
     .returning();
 
+  return result;
+}
+
+export async function updateUserChirpRedStatus(userId: string) {
+  const [result] = await db
+    .update(users)
+    .set({ isChirpyRed: true })
+    .where(eq(users.id, userId))
+    .returning();
   return result;
 }

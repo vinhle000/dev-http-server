@@ -20,7 +20,8 @@ import {
   getUserByEmail,
   getUserById,
   deleteAllUsers,
-  updateUser,
+  updateUserCredentials,
+  updateUserChirpRedStatus,
 } from '../lib/db/queries/users.js';
 import {
   createChirp,
@@ -36,7 +37,7 @@ import {
 import { config } from '../config.js';
 
 import { NewUser, RefreshToken } from '../lib/db/schema.js';
-type UserResponse = Omit<NewUser, 'hashPassword'>;
+type UserResponse = Omit<NewUser, 'hashedPassword'>;
 
 process.loadEnvFile();
 
@@ -102,6 +103,7 @@ export const handleCreateUser = async (req: Request, res: Response) => {
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       email: result.email,
+      isChirpyRed: result.isChirpyRed,
     };
     res.status(201).send(newUserResponse);
   }
@@ -140,6 +142,7 @@ export const handleLogin = async (req: Request, res: Response) => {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     email: user.email,
+    isChirpyRed: user.isChirpyRed,
   };
   // attach created jwt and refreshToken to userResponse
   res
@@ -237,7 +240,10 @@ export const handleGetChirp = async (req: Request, res: Response) => {
   res.status(200).send(result);
 };
 
-export const handleUpdateUser = async (req: Request, res: Response) => {
+export const handleUpdateUserCredentials = async (
+  req: Request,
+  res: Response
+) => {
   // check for bearer token, must be jwt
   const token = getBearerToken(req);
   const userId = validateJWT(token, config.jwtSecret);
@@ -250,7 +256,7 @@ export const handleUpdateUser = async (req: Request, res: Response) => {
 
   const hashedPassword = await hashPassword(password);
 
-  const result = await updateUser(userId, email, hashedPassword);
+  const result = await updateUserCredentials(userId, email, hashedPassword);
   if (!result) {
     throw new Error(`Error occurred updating user`);
   }
@@ -290,4 +296,32 @@ export const handleDeleteChirp = async (req: Request, res: Response) => {
   }
 
   res.status(204).send(`Chirp successfully deleted`);
+};
+
+export const webhookUpdateUserChirpRedStatus = async (
+  req: Request,
+  res: Response
+) => {
+  const { event, data } = req.body;
+
+  if (!event || !data) {
+    res.sendStatus(404); // respond to polka so they can retry
+  }
+
+  if (event === 'user.upgraded') {
+    //updaete
+    //check user exists
+    const user = await getUserById(data.userId);
+    if (!user) {
+      throw new NotFoundError(`userId not found`);
+    }
+
+    const result = updateUserChirpRedStatus(data.userId);
+    if (!result) {
+      throw new Error('Error occurred updating user chirp red status');
+    }
+    res.sendStatus(204);
+  } else {
+    res.sendStatus(204);
+  }
 };
