@@ -26,6 +26,7 @@ import {
   createChirp,
   getAllChirps,
   getChirp,
+  deleteChirp,
 } from '../lib/db/queries/chirps.js';
 import {
   getRefreshToken,
@@ -263,4 +264,30 @@ export const handleUpdateUser = async (req: Request, res: Response) => {
   res.status(200).send(newUserResponse);
 
   //respond with  (newly updated User resource (omitting the password, of course).
+};
+
+export const handleDeleteChirp = async (req: Request, res: Response) => {
+  const { chirpID } = req.params;
+
+  const token = getBearerToken(req);
+  const userId = validateJWT(token, config.jwtSecret);
+
+  const chirp = await getChirp(chirpID);
+
+  if (!chirp) {
+    throw new NotFoundError('Chirp not found');
+  }
+
+  if (chirp.userId !== userId) {
+    res.status(403).send({ error: `Forbidden` });
+    return;
+  }
+
+  const result = await deleteChirp(chirpID);
+
+  if (!result) {
+    throw new Error(`Error deleting chirp`);
+  }
+
+  res.status(204).send(`Chirp successfully deleted`);
 };

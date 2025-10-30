@@ -39,6 +39,7 @@ import {
   handleRefresh,
   handleRevoke,
   handleUpdateUser,
+  handleDeleteChirp,
 } from './app/handlers.js';
 
 //automated migrations client
@@ -138,6 +139,14 @@ app.get('/api/chirps', async (req, res, next) => {
 app.get('/api/chirps/:chirpID', async (req, res, next) => {
   try {
     await handleGetChirp(req, res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+app.delete('/api/chirps/:chirpID', async (req, res, next) => {
+  try {
+    await handleDeleteChirp(req, res);
   } catch (err) {
     next(err);
   }

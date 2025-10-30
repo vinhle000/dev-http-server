@@ -20,3 +20,11 @@ export async function getChirp(chirpId: string) {
   const [result] = await db.select().from(chirps).where(eq(chirps.id, chirpId));
   return result;
 }
+
+export async function deleteChirp(chirpId: string) {
+  const [result] = await db
+    .delete(chirps)
+    .where(eq(chirps.id, chirpId))
+    .returning();
+  return result;
+}
