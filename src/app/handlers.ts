@@ -94,8 +94,6 @@ export const handleCreateUser = async (req: Request, res: Response) => {
     hashedPassword: hashedPassword,
   });
 
-  console.log(`DDDDDD - result of createUser() ===> ${JSON.stringify(result)}`);
-
   if (!result) {
     throw new Error(`Error occurred creating new user`);
   } else {
@@ -241,7 +239,6 @@ export const handleGetChirp = async (req: Request, res: Response) => {
   }
   res.status(200).send(result);
 };
-
 export const handleUpdateUserCredentials = async (
   req: Request,
   res: Response
