@@ -13,6 +13,7 @@ import {
   checkPasswordHash,
   getBearerToken,
   makeRefreshToken,
+  getAPIKey,
 } from '../lib/auth.js';
 // Model DB functions
 import {
@@ -302,6 +303,12 @@ export const webhookUpdateUserChirpRedStatus = async (
   req: Request,
   res: Response
 ) => {
+  const apiKey = getAPIKey(req);
+
+  if (apiKey !== config.polkaKey) {
+    throw new UnauthorizedError(`Invalid key`);
+  }
+
   const { event, data } = req.body;
 
   if (!event || !data) {

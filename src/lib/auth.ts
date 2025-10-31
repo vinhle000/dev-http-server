@@ -85,3 +85,17 @@ export async function makeRefreshToken(userId: string): Promise<RefreshToken> {
 
   return result;
 }
+
+export function getAPIKey(req: Request) {
+  const authHeader = req.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('ApiKey')) {
+    throw new UnauthorizedError('Invalid auth header');
+  }
+
+  const apiKey = authHeader.split(' ')[1];
+
+  if (!apiKey) {
+    throw new UnauthorizedError('Invalid polka key');
+  }
+  return apiKey;
+}
