@@ -11,9 +11,13 @@ export async function createChirp(body: string, userId: string) {
   return result;
 }
 
-export async function getAllChirps() {
-  const result = await db.select().from(chirps).orderBy(chirps.createdAt);
-  return result;
+export async function getAllChirps(userId: string) {
+  if (userId) {
+    // only get specific user's records
+    console.log(`DEBUG ======= get only ONLY AUTHOR'S Chirps ==\n\n `);
+    return await db.select().from(chirps).where(eq(chirps.userId, userId));
+  }
+  return await db.select().from(chirps).orderBy(chirps.createdAt);
 }
 
 export async function getChirp(chirpId: string) {

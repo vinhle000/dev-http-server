@@ -130,13 +130,8 @@ export const handleLogin = async (req: Request, res: Response) => {
   }
   let expTime: number = 3600;
 
-  // jwt token always set to expire after 1 hour
-  // if (!expTime || expTime > 3600) {
-  //   expTime = 3600; //seconds in an hour, defaults to 1 hour
-  // }
-
   const jwtToken = makeJWT(user.id, expTime, config.jwtSecret);
-  const refreshToken: RefreshToken = await makeRefreshToken(user.id); // should return refresh token obj
+  const refreshToken: RefreshToken = await makeRefreshToken(user.id);
 
   const userResponse: UserResponse = {
     id: user.id,
@@ -145,7 +140,7 @@ export const handleLogin = async (req: Request, res: Response) => {
     email: user.email,
     isChirpyRed: user.isChirpyRed,
   };
-  // attach created jwt and refreshToken to userResponse
+
   res
     .status(200)
     .send({ ...userResponse, token: jwtToken, refreshToken: refreshToken.id }); // add generated jwt token
@@ -189,7 +184,6 @@ export const handleRevoke = async (req: Request, res: Response) => {
 export const handleCreateChirp = async (req: Request, res: Response) => {
   const { body } = req.body;
 
-  // NOTE - maybe validate user exists in db
   const userJwt = await getBearerToken(req);
   const validatedUserId = validateJWT(userJwt, config.jwtSecret);
 
@@ -222,7 +216,14 @@ export const handleCreateChirp = async (req: Request, res: Response) => {
 };
 
 export const handleGetAllChirps = async (req: Request, res: Response) => {
-  const result = await getAllChirps();
+  let authorId = '';
+
+  let authorQuery = req.query.authorId;
+  if (typeof authorQuery === 'string') {
+    authorId = authorQuery;
+  }
+
+  const result = await getAllChirps(authorId);
 
   if (!result) {
     throw new Error(`Error occurred getting ALL chirps`);
@@ -269,8 +270,6 @@ export const handleUpdateUserCredentials = async (
   };
 
   res.status(200).send(newUserResponse);
-
-  //respond with  (newly updated User resource (omitting the password, of course).
 };
 
 export const handleDeleteChirp = async (req: Request, res: Response) => {
@@ -316,8 +315,6 @@ export const webhookUpdateUserChirpRedStatus = async (
   }
 
   if (event === 'user.upgraded') {
-    //updaete
-    //check user exists
     const user = await getUserById(data.userId);
     if (!user) {
       throw new NotFoundError(`userId not found`);

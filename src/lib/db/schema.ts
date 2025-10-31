@@ -33,7 +33,6 @@ export const chirps = pgTable('chirps', {
     .notNull(),
 });
 
-// [ ] 1.Create new db table called 'refresh_tokens'
 export const refreshTokens = pgTable('refresh_tokens', {
   id: text('token').primaryKey().notNull(),
   createdA: timestamp('created_at').notNull().defaultNow(),
