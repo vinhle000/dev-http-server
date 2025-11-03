@@ -38,6 +38,7 @@ import {
 import { config } from '../config.js';
 
 import { NewUser, RefreshToken } from '../lib/db/schema.js';
+import { L } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
 type UserResponse = Omit<NewUser, 'hashedPassword'>;
 
 process.loadEnvFile();
@@ -221,7 +222,13 @@ export const handleGetAllChirps = async (req: Request, res: Response) => {
     authorId = authorQuery;
   }
 
-  const result = await getAllChirps(authorId);
+  let sortAsc = true;
+  let sortQuery = req.query.sort;
+  if (typeof sortQuery === 'string') {
+    sortAsc = sortQuery === 'desc' ? false : true; // asc is default if no 'sort' query param not provided
+  }
+
+  const result = await getAllChirps(authorId, sortAsc);
 
   if (!result) {
     throw new Error(`Error occurred getting ALL chirps`);

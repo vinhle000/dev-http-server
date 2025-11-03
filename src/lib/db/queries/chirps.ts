@@ -1,6 +1,6 @@
 import { db } from '../index.js';
 import { chirps } from '../schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, asc, desc } from 'drizzle-orm';
 
 // create chirps
 export async function createChirp(body: string, userId: string) {
@@ -11,13 +11,20 @@ export async function createChirp(body: string, userId: string) {
   return result;
 }
 
-export async function getAllChirps(userId: string) {
+export async function getAllChirps(userId: string, sortAsc: boolean) {
   if (userId) {
     // only get specific user's records
     console.log(`DEBUG ======= get only ONLY AUTHOR'S Chirps ==\n\n `);
-    return await db.select().from(chirps).where(eq(chirps.userId, userId));
+    return await db
+      .select()
+      .from(chirps)
+      .where(eq(chirps.userId, userId))
+      .orderBy(sortAsc ? asc(chirps.createdAt) : desc(chirps.createdAt));
   }
-  return await db.select().from(chirps).orderBy(chirps.createdAt);
+  return await db
+    .select()
+    .from(chirps)
+    .orderBy(sortAsc ? asc(chirps.createdAt) : desc(chirps.createdAt));
 }
 
 export async function getChirp(chirpId: string) {
